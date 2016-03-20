@@ -4,7 +4,7 @@
 		<container type="docker">r-base</container>
 	</requirements>
 	<command interpreter="Rscript">
-dpc.R ${input_vcf} ${sample_number}
+R.R ${input_vcf} ${sample_number}
 	</command>
 
 	<inputs>

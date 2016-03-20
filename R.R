@@ -229,22 +229,35 @@ getClusterAssignments <- function(GS.data, density.file, window.size = 20, burn.
 args<-commandArgs(TRUE)
 vcfdat = read.table(args[1],sep='\t',comment.char='#')
 datacol=as.integer(args[2]) + 9
-library(PurBayes)
 namecol=9
 tumour_stat = data.frame(do.call(rbind, strsplit(as.vector(vcfdat[,datacol]), split = ":", fixed = TRUE)))
 colnames(tumour_stat) = strsplit(as.vector(unique(vcfdat[,namecol])),':')[[1]]
-TDP <- as.integer(as.vector(tumour_stat[,'DP']))
+TFA = as.double(as.vector(tumour_stat[,'FA']))
+TDP = as.integer(as.vector(tumour_stat[,'DP']))
+TAD1 <-  as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',1)))
 TAD2 <-  as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',2)))
+
 if(datacol==11){datacol=10}else{datacol=11}
 tumour_stat = data.frame(do.call(rbind, strsplit(as.vector(vcfdat[,datacol]), split = ":", fixed = TRUE)))
 colnames(tumour_stat) = strsplit(as.vector(unique(vcfdat[,namecol])),':')[[1]]
 NDP <- as.integer(as.vector(tumour_stat[,'DP']))
-DP= TDP + NDP
-out = summary(PurBayes(N=DP,Y=TAD2,M=NULL,Z=NULL,pop.max = 10,prior = NULL,burn.in = 500,n.post = 100))
-cellula=out$purity
+NAD1 <-  as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',1)))
+NAD2 <-  as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',2)))
+j=1
+print(mean(TAD2/(TDP+NDP)))
+NEWDP=NULL
+NEWAD=NULL
+for(i in 1:length(TDP)){
+  if(NAD2[i]==0)
+    {
+      NEWAD[j]=TDP[i]
+      j=j+1
+    }
+}
+cellula=sum(NEWAD)/sum(TDP)
 
 #Gibbs sampler
-GS.data.binomial<-subclone.dirichlet.gibbs(y=TAD2,N=DP,cellularity=cellula)
+GS.data.binomial<-subclone.dirichlet.gibbs(y=TAD2,N=TDP,cellularity=cellula)
 Gibbs.subclone.density.est(GS.data.binomial,"DirichletProcessplotBinomial.png", post.burn.in.start = 300, post.burn.in.stop = 1000, y.max=50)
 
 #density estimator
